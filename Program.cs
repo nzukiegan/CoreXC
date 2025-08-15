@@ -2,13 +2,19 @@
 using System.Data.SqlClient;
 using System.IO;
 
-class Program
+class DatabaseInitializer
 {
-    static void Main()
-    {
-        string masterConnection = "Server=localhost;Database=master;Trusted_Connection=True;";
-        string targetDbName = "CoreXCDb";
+    private readonly string masterConnection;
+    private readonly string targetDbName;
 
+    public DatabaseInitializer(string server, string databaseName)
+    {
+        masterConnection = $"Server={server};Database=master;Trusted_Connection=True;";
+        targetDbName = databaseName;
+    }
+
+    public void EnsureDatabaseExists()
+    {
         using (SqlConnection conn = new SqlConnection(masterConnection))
         {
             conn.Open();
@@ -19,7 +25,7 @@ class Program
                 BEGIN
                     CREATE DATABASE [{targetDbName}];
                 END";
-            
+
             using (SqlCommand cmd = new SqlCommand(createDbSql, conn))
             {
                 cmd.ExecuteNonQuery();
@@ -27,15 +33,27 @@ class Program
 
             Console.WriteLine($"Database '{targetDbName}' is ready.");
         }
+    }
+}
 
-        string targetDbConnection = $"Server=localhost;Database={targetDbName};Trusted_Connection=True;";
+class Program
+{
+    static void Main()
+    {
+        string server = "localhost";
+        string dbName = "CoreXCDb";
+
+        var dbInitializer = new DatabaseInitializer(server, dbName);
+        dbInitializer.EnsureDatabaseExists();
+
+        string targetDbConnection = $"Server={server};Database={dbName};Trusted_Connection=True;";
 
         string createTablesSql = File.ReadAllText("Schema.sql");
 
         using (SqlConnection conn = new SqlConnection(targetDbConnection))
         {
             conn.Open();
-            Console.WriteLine($"Connected to database '{targetDbName}'.");
+            Console.WriteLine($"Connected to database '{dbName}'.");
 
             using (SqlCommand cmd = new SqlCommand(createTablesSql, conn))
             {
