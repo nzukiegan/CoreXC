@@ -40,3 +40,4 @@ C:\Users\Egan\Desktop\CoreXCDotnet\obj\Debug\net9.0\refint\CoreXCDotnet.dll
 C:\Users\Egan\Desktop\CoreXCDotnet\obj\Debug\net9.0\CoreXCDotnet.pdb
 C:\Users\Egan\Desktop\CoreXCDotnet\obj\Debug\net9.0\CoreXCDotnet.genruntimeconfig.cache
 C:\Users\Egan\Desktop\CoreXCDotnet\obj\Debug\net9.0\ref\CoreXCDotnet.dll
+C:\Users\Egan\Desktop\CoreXCDotnet\obj\Debug\net9.0\CoreXCDotnet.sourcelink.json

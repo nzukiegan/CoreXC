@@ -46,12 +46,16 @@ CREATE TABLE dbo.frequency_bands (
         REFERENCES dbo.network_types(network_type_id)
 );
 
--- Channels / Base Stations
+CREATE TABLE dbo.channel_tech_lookup (
+    tech_id INT IDENTITY(1,1) PRIMARY KEY,
+    tech_name NVARCHAR(20) NOT NULL UNIQUE
+);
+
 CREATE TABLE dbo.channels (
     channel_id INT IDENTITY(1,1) PRIMARY KEY,
     channel_number INT NOT NULL,
     channel_name NVARCHAR(200) NOT NULL,
-    tech NVARCHAR(20) NOT NULL, -- consider FK to lookup table
+    tech_id INT NOT NULL,
     frequency_mhz FLOAT NOT NULL,
     power_percent TINYINT NULL CHECK (power_percent BETWEEN 0 AND 100),
     arfcn INT NULL,
@@ -68,7 +72,8 @@ CREATE TABLE dbo.channels (
     band_id INT NULL,
     last_updated DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     CONSTRAINT FK_channels_operators FOREIGN KEY (operator_id) REFERENCES dbo.operators(operator_id),
-    CONSTRAINT FK_channels_frequency_bands FOREIGN KEY (band_id) REFERENCES dbo.frequency_bands(band_id)
+    CONSTRAINT FK_channels_frequency_bands FOREIGN KEY (band_id) REFERENCES dbo.frequency_bands(band_id),
+    CONSTRAINT FK_channels_tech FOREIGN KEY (tech_id) REFERENCES dbo.channel_tech_lookup(tech_id)
 );
 
 -- Locations
@@ -214,6 +219,9 @@ CREATE TABLE dbo.scan_results (
     CONSTRAINT FK_scan_results_channel FOREIGN KEY (channel_id) REFERENCES dbo.channels(channel_id),
     CONSTRAINT FK_scan_results_operator FOREIGN KEY (operator_id) REFERENCES dbo.operators(operator_id)
 );
+
+INSERT INTO dbo.channel_tech_lookup (tech_name)
+VALUES ('GSM'), ('TOD-LTE'), ('FOD-LTE')
 
 -- Index examples
 CREATE INDEX IX_scan_results_channel_event ON dbo.scan_results(channel_id, event_time);
