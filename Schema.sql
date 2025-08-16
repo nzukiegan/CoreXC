@@ -22,11 +22,14 @@ CREATE TABLE dbo.network_types (
     description NVARCHAR(500) NULL
 );
 
--- Operators
 CREATE TABLE dbo.operators (
     operator_id INT IDENTITY(1,1) PRIMARY KEY,
-    operator_name NVARCHAR(150) NOT NULL,
-    operator_code NVARCHAR(50) NOT NULL UNIQUE,
+    operator_name NVARCHAR(150) NOT NULL,     
+    operator_code NVARCHAR(50) NOT NULL UNIQUE, 
+    plmn NVARCHAR(10) NULL,                  
+    mcc INT NULL,                            
+    mnc INT NULL,                            
+    logo_url NVARCHAR(500) NULL,             
     description NVARCHAR(500) NULL,
     created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     updated_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
