@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CoreXCDotnet")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+171084a34294df1166acb86d281d3f1f3a23edb8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1aa4b7cf1e8cf794c79ac7981c383897557f4b6a")]
 [assembly: System.Reflection.AssemblyProductAttribute("CoreXCDotnet")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CoreXCDotnet")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

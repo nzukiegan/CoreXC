@@ -1,4 +1,6 @@
--- schema (dbo)
+-- ========================
+-- SCHEMA (dbo)
+-- ========================
 
 -- Users
 CREATE TABLE dbo.users (
@@ -33,31 +35,36 @@ CREATE TABLE dbo.operators (
 -- Frequency bands
 CREATE TABLE dbo.frequency_bands (
     band_id INT IDENTITY(1,1) PRIMARY KEY,
-    band_name NVARCHAR(100) NOT NULL UNIQUE,
+    band_name NVARCHAR(100) NOT NULL UNIQUE,      -- e.g. "GSM-900", "LTE Band 3"
+    rat NVARCHAR(20) NOT NULL,                    -- e.g. "GSM", "LTE"
     frequency_range NVARCHAR(100) NULL,
     uplink_start FLOAT NULL,
     uplink_end FLOAT NULL,
     downlink_start FLOAT NULL,
     downlink_end FLOAT NULL,
-    network_type_id INT NULL,
+    ul_channel INT NULL,
+    dl_channel INT NULL,
     description NVARCHAR(500) NULL,
+    network_type_id INT NULL,
     created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     CONSTRAINT FK_frequency_bands_network_types FOREIGN KEY (network_type_id)
         REFERENCES dbo.network_types(network_type_id)
 );
 
+-- Channel tech lookup
 CREATE TABLE dbo.channel_tech_lookup (
     tech_id INT IDENTITY(1,1) PRIMARY KEY,
+    lookup_id INT NOT NULL,  -- holds id to gsm or lte cells
     tech_name NVARCHAR(20) NOT NULL UNIQUE
 );
 
-CREATE TABLE dbo.channels (
-    channel_id INT IDENTITY(1,1) PRIMARY KEY,
+-- Base stations
+CREATE TABLE dbo.base_stations (
+    base_station_id INT IDENTITY(1,1) PRIMARY KEY,
     channel_number INT NOT NULL,
-    channel_name NVARCHAR(200) NOT NULL,
+    base_station_name NVARCHAR(200) NOT NULL,
     tech_id INT NOT NULL,
     frequency_mhz FLOAT NOT NULL,
-    power_percent TINYINT NULL CHECK (power_percent BETWEEN 0 AND 100),
     arfcn INT NULL,
     mnc INT NULL,
     lac_tac INT NULL,
@@ -66,14 +73,70 @@ CREATE TABLE dbo.channels (
     uplink_frequency FLOAT NULL,
     downlink_frequency FLOAT NULL,
     name NVARCHAR(200) NULL,
-    priority TINYINT NULL CHECK (priority BETWEEN 1 AND 5),
     status NVARCHAR(20) NULL,
     operator_id INT NULL,
     band_id INT NULL,
     last_updated DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-    CONSTRAINT FK_channels_operators FOREIGN KEY (operator_id) REFERENCES dbo.operators(operator_id),
-    CONSTRAINT FK_channels_frequency_bands FOREIGN KEY (band_id) REFERENCES dbo.frequency_bands(band_id),
-    CONSTRAINT FK_channels_tech FOREIGN KEY (tech_id) REFERENCES dbo.channel_tech_lookup(tech_id)
+    CONSTRAINT FK_base_stations_operators FOREIGN KEY (operator_id) REFERENCES dbo.operators(operator_id),
+    CONSTRAINT FK_base_stations_frequency_bands FOREIGN KEY (band_id) REFERENCES dbo.frequency_bands(band_id),
+    CONSTRAINT FK_base_stations_tech FOREIGN KEY (tech_id) REFERENCES dbo.channel_tech_lookup(tech_id)
+);
+
+-- GSM cells
+CREATE TABLE dbo.gsm_cells (
+    gsm_id INT IDENTITY(1,1) PRIMARY KEY,
+    arfcn INT NOT NULL,
+    bsic INT NULL,
+    lac INT NULL,
+    cell_id INT NOT NULL,
+    mcc INT NULL,
+    mnc INT NULL,
+    rxlev FLOAT NULL,
+    operator_id INT NULL,
+    created_by INT NULL,
+    created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_gsm_operator FOREIGN KEY (operator_id) REFERENCES dbo.operators(operator_id),
+    CONSTRAINT FK_gsm_created_by FOREIGN KEY (created_by) REFERENCES dbo.users(user_id)
+);
+
+-- LTE FDD cells
+CREATE TABLE dbo.lte_fdd_cells (
+    lte_fdd_id INT IDENTITY(1,1) PRIMARY KEY,
+    band INT NOT NULL,
+    earfcn INT NOT NULL,
+    pci INT NULL,
+    mcc INT NULL,
+    mnc INT NULL,
+    tac INT NULL,
+    cell_identity BIGINT NULL,
+    rsrp FLOAT NULL,
+    rsrq FLOAT NULL,
+    operator_id INT NULL,
+    created_by INT NULL,
+    created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_lte_fdd_operator FOREIGN KEY (operator_id) REFERENCES dbo.operators(operator_id),
+    CONSTRAINT FK_lte_fdd_created_by FOREIGN KEY (created_by) REFERENCES dbo.users(user_id)
+);
+
+-- LTE TDD cells
+CREATE TABLE dbo.lte_tdd_cells (
+    lte_tdd_id INT IDENTITY(1,1) PRIMARY KEY,
+    band INT NOT NULL,
+    earfcn INT NOT NULL,
+    pci INT NULL,
+    mcc INT NULL,
+    mnc INT NULL,
+    tac INT NULL,
+    cell_identity BIGINT NULL,
+    subframe_assignment INT NULL,
+    special_subframe_pattern INT NULL,
+    rsrp FLOAT NULL,
+    rsrq FLOAT NULL,
+    operator_id INT NULL,
+    created_by INT NULL,
+    created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_lte_tdd_operator FOREIGN KEY (operator_id) REFERENCES dbo.operators(operator_id),
+    CONSTRAINT FK_lte_tdd_created_by FOREIGN KEY (created_by) REFERENCES dbo.users(user_id)
 );
 
 -- Locations
@@ -94,7 +157,7 @@ CREATE TABLE dbo.device_types (
     description NVARCHAR(300) NULL
 );
 
--- Devices (single canonical devices table)
+-- Devices
 CREATE TABLE dbo.devices (
     device_id INT IDENTITY(1,1) PRIMARY KEY,
     device_name NVARCHAR(200) NOT NULL,
@@ -111,23 +174,55 @@ CREATE TABLE dbo.devices (
 -- IMSI targets
 CREATE TABLE dbo.imsi_targets (
     imsi_target_id INT IDENTITY(1,1) PRIMARY KEY,
-    imsi NVARCHAR(64) NOT NULL UNIQUE,
     description NVARCHAR(500) NULL,
+    case_ref NVARCHAR(100) NULL,
+    location_id INT NULL,
     is_active BIT NOT NULL DEFAULT 1,
     created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     created_by INT NULL,
-    CONSTRAINT FK_imsi_targets_users FOREIGN KEY (created_by) REFERENCES dbo.users(user_id)
+    CONSTRAINT FK_imsi_targets_users FOREIGN KEY (created_by) REFERENCES dbo.users(user_id),
+    CONSTRAINT FK_imsi_targets_location FOREIGN KEY (location_id) REFERENCES dbo.locations(location_id)
+);
+
+CREATE TABLE dbo.imsi_target_numbers (
+    imsi_number_id INT IDENTITY(1,1) PRIMARY KEY,
+    imsi_target_id INT NOT NULL,
+    imsi NVARCHAR(64) NOT NULL,
+    CONSTRAINT FK_imsi_numbers_target FOREIGN KEY (imsi_target_id) REFERENCES dbo.imsi_targets(imsi_target_id)
+);
+
+CREATE TABLE dbo.imsi_target_names (
+    name_id INT IDENTITY(1,1) PRIMARY KEY,
+    imsi_target_id INT NOT NULL,
+    target_name NVARCHAR(200) NOT NULL,
+    CONSTRAINT FK_imsi_names_target FOREIGN KEY (imsi_target_id) REFERENCES dbo.imsi_targets(imsi_target_id)
 );
 
 -- IMEI targets
 CREATE TABLE dbo.imei_targets (
     imei_target_id INT IDENTITY(1,1) PRIMARY KEY,
-    imei NVARCHAR(50) NOT NULL UNIQUE,
     description NVARCHAR(500) NULL,
+    case_ref NVARCHAR(100) NULL,
+    location_id INT NULL,
     is_active BIT NOT NULL DEFAULT 1,
     created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     created_by INT NULL,
-    CONSTRAINT FK_imei_targets_users FOREIGN KEY (created_by) REFERENCES dbo.users(user_id)
+    CONSTRAINT FK_imei_targets_users FOREIGN KEY (created_by) REFERENCES dbo.users(user_id),
+    CONSTRAINT FK_imei_targets_location FOREIGN KEY (location_id) REFERENCES dbo.locations(location_id)
+);
+
+CREATE TABLE dbo.imei_target_numbers (
+    imei_number_id INT IDENTITY(1,1) PRIMARY KEY,
+    imei_target_id INT NOT NULL,
+    imei NVARCHAR(50) NOT NULL,
+    CONSTRAINT FK_imei_numbers_target FOREIGN KEY (imei_target_id) REFERENCES dbo.imei_targets(imei_target_id)
+);
+
+CREATE TABLE dbo.imei_target_names (
+    name_id INT IDENTITY(1,1) PRIMARY KEY,
+    imei_target_id INT NOT NULL,
+    target_name NVARCHAR(200) NOT NULL,
+    CONSTRAINT FK_imei_names_target FOREIGN KEY (imei_target_id) REFERENCES dbo.imei_targets(imei_target_id)
 );
 
 -- Whitelist
@@ -161,6 +256,7 @@ CREATE TABLE dbo.blacklist (
     CONSTRAINT FK_blacklist_user FOREIGN KEY (created_by) REFERENCES dbo.users(user_id)
 );
 
+-- Task types
 CREATE TABLE dbo.task_types (
     task_type_id INT IDENTITY(1,1) PRIMARY KEY,
     type_name NVARCHAR(20) NOT NULL UNIQUE,
@@ -171,6 +267,7 @@ CREATE TABLE dbo.task_types (
 CREATE TABLE dbo.tasks (
     task_id INT IDENTITY(1,1) PRIMARY KEY,
     task_type_id INT NOT NULL,
+    tech_id INT NOT NULL,
     source NVARCHAR(100) NULL,
     dl INT NULL,
     ul INT NULL,
@@ -185,10 +282,11 @@ CREATE TABLE dbo.tasks (
     channel_id INT NULL,
     created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     status NVARCHAR(30) NULL,
-    CONSTRAINT FK_tasks_channel FOREIGN KEY (channel_id) REFERENCES dbo.channels(channel_id),
+    CONSTRAINT FK_tasks_base_station FOREIGN KEY (channel_id) REFERENCES dbo.base_stations(base_station_id),
     CONSTRAINT FK_tasks_location FOREIGN KEY (location_id) REFERENCES dbo.locations(location_id),
     CONSTRAINT FK_tasks_task_type FOREIGN KEY (task_type_id) REFERENCES dbo.task_types(task_type_id),
-    CONSTRAINT FK_tasks_user FOREIGN KEY (user_id) REFERENCES dbo.users(user_id)
+    CONSTRAINT FK_tasks_user FOREIGN KEY (user_id) REFERENCES dbo.users(user_id),
+    CONSTRAINT FK_tasks_tech FOREIGN KEY (tech_id) REFERENCES dbo.channel_tech_lookup(tech_id)
 );
 
 -- Scan sessions and results
@@ -213,19 +311,21 @@ CREATE TABLE dbo.scan_results (
     operator_id INT NULL,
     signal_strength FLOAT NULL,
     signal_quality FLOAT NULL,
+    tmsi NVARCHAR(64) NULL,
+    time_advance INT NULL,
     event_time DATETIME2 NOT NULL,
     additional_data NVARCHAR(MAX) NULL,
     CONSTRAINT FK_scan_results_session FOREIGN KEY (session_id) REFERENCES dbo.scan_sessions(session_id),
-    CONSTRAINT FK_scan_results_channel FOREIGN KEY (channel_id) REFERENCES dbo.channels(channel_id),
+    CONSTRAINT FK_scan_results_base_station FOREIGN KEY (channel_id) REFERENCES dbo.base_stations(base_station_id),
     CONSTRAINT FK_scan_results_operator FOREIGN KEY (operator_id) REFERENCES dbo.operators(operator_id)
 );
 
-INSERT INTO dbo.channel_tech_lookup (tech_name)
-VALUES ('GSM'), ('TOD-LTE'), ('FOD-LTE')
 
--- Index examples
+-- ========================
+-- INDEXES
+-- ========================
 CREATE INDEX IX_scan_results_channel_event ON dbo.scan_results(channel_id, event_time);
 CREATE INDEX IX_scan_results_session ON dbo.scan_results(session_id);
 CREATE INDEX IX_tasks_case_ref ON dbo.tasks(case_ref);
-CREATE INDEX IX_imsi_targets_imsi ON dbo.imsi_targets(imsi);
-CREATE INDEX IX_imei_targets_imei ON dbo.imei_targets(imei);
+CREATE INDEX IX_imsi_target_numbers_imsi ON dbo.imsi_target_numbers(imsi);
+CREATE INDEX IX_imei_target_numbers_imei ON dbo.imei_target_numbers(imei);

@@ -1,0 +1,282 @@
+1. Users
+
+Stores system user accounts and authentication details.
+
+| Column         | Type            | Constraints              | Description            |
+| -------------- | --------------- | ------------------------ | ---------------------- |
+| user__id       | INT IDENTITY PK | PK                       | Unique user identifier |
+| username       | NVARCHAR(100)   | NOT NULL, UNIQUE         | Login name             |
+| password__hash | NVARCHAR(255)   | NOT NULL                 | Hashed password        |
+| full__name     | NVARCHAR(200)   | NOT NULL                 | User’s full name       |
+| email          | NVARCHAR(255)   | UNIQUE                   | Email address          |
+| is__active     | BIT             | DEFAULT 1                | Active status          |
+| last__login    | DATETIME2       | NULL                     | Last login timestamp   |
+| created__at    | DATETIME2       | DEFAULT SYSUTCDATETIME() | Record creation time   |
+| updated__at    | DATETIME2       | DEFAULT SYSUTCDATETIME() | Last updated time      |
+
+---
+
+2. Network Types
+
+Defines types of networks (e.g., GSM, LTE).
+
+| Column            | Type            | Constraints      | Description          |
+| ----------------- | --------------- | ---------------- | -------------------- |
+| network__type__id | INT IDENTITY PK | PK               | Unique ID            |
+| network__name     | NVARCHAR(50)    | NOT NULL, UNIQUE | Network name         |
+| description       | NVARCHAR(500)   | NULL             | Optional description |
+
+---
+3. Operators
+
+Stores mobile network operator information.
+
+| Column         | Type            | Constraints              | Description          |
+| -------------- | --------------- | ------------------------ | -------------------- |
+| operator__id   | INT IDENTITY PK | PK                       | Unique ID            |
+| operator__name | NVARCHAR(150)   | NOT NULL                 | Operator name        |
+| operator__code | NVARCHAR(50)    | NOT NULL, UNIQUE         | Operator code        |
+| description    | NVARCHAR(500)   | NULL                     | Optional description |
+| created__at    | DATETIME2       | DEFAULT SYSUTCDATETIME() | Created date         |
+| updated__at    | DATETIME2       | DEFAULT SYSUTCDATETIME() | Last updated         |
+
+---
+4. Frequency Bands
+
+Represents frequency band details for operators.
+
+| Column            | Type            | Constraints                            | Description          |
+| ----------------- | --------------- | -------------------------------------- | -------------------- |
+| band__id          | INT IDENTITY PK | PK                                     | Unique band ID       |
+| band__name        | NVARCHAR(100)   | NOT NULL, UNIQUE                       | Band name            |
+| frequency__range  | NVARCHAR(100)   | NULL                                   | Range text           |
+| uplink__start     | FLOAT           | NULL                                   | Start uplink (MHz)   |
+| uplink__end       | FLOAT           | NULL                                   | End uplink (MHz)     |
+| downlink__start   | FLOAT           | NULL                                   | Start downlink (MHz) |
+| downlink__end     | FLOAT           | NULL                                   | End downlink (MHz)   |
+| network__type__id | INT             | FK → network__types(network__type__id) | Network type         |
+| description       | NVARCHAR(500)   | NULL                                   | Description          |
+| created__at       | DATETIME2       | DEFAULT SYSUTCDATETIME()               | Created date         |
+
+---
+
+5. Channel Technology Lookup
+
+Lists available channel technologies.
+
+| Column     | Type            | Constraints      | Description     |
+| ---------- | --------------- | ---------------- | --------------- |
+| tech__id   | INT IDENTITY PK | PK               | Technology ID   |
+| tech__name | NVARCHAR(20)    | NOT NULL, UNIQUE | Technology name |
+
+---
+6. Channels
+
+Stores information about network channels.
+
+| Column              | Type            | Constraints                          | Description         |
+| ------------------- | --------------- | ------------------------------------ | ------------------- |
+| channel__id         | INT IDENTITY PK | PK                                   | Channel ID          |
+| channel__number     | INT             | NOT NULL                             | Channel number      |
+| channel__name       | NVARCHAR(200)   | NOT NULL                             | Name                |
+| tech__id            | INT             | FK → channel__tech__lookup(tech__id) | Technology          |
+| frequency__mhz      | FLOAT           | NOT NULL                             | Frequency           |
+| power__percent      | TINYINT         | NULL, 0–100                          | Power level         |
+| arfcn               | INT             | NULL                                 | ARFCN               |
+| mnc                 | INT             | NULL                                 | Mobile network code |
+| lac__tac            | INT             | NULL                                 | LAC/TAC             |
+| bsic__psc__pci      | INT             | NULL                                 | BSIC/PSC/PCI        |
+| target__imsi        | NVARCHAR(64)    | NULL                                 | Target IMSI         |
+| uplink__frequency   | FLOAT           | NULL                                 | Uplink frequency    |
+| downlink__frequency | FLOAT           | NULL                                 | Downlink frequency  |
+| name                | NVARCHAR(200)   | NULL                                 | Name alias          |
+| priority            | TINYINT         | NULL, 1–5                            | Priority            |
+| status              | NVARCHAR(20)    | NULL                                 | Status              |
+| operator__id        | INT             | FK → operators(operator__id)         | Operator            |
+| band__id            | INT             | FK → frequency__bands(band__id)      | Frequency band      |
+| last__updated       | DATETIME2       | DEFAULT SYSUTCDATETIME()             | Last update time    |
+
+---
+
+7. Locations
+
+Stores location information.
+
+| Column         | Type            | Constraints              | Description   |
+| -------------- | --------------- | ------------------------ | ------------- |
+| location__id   | INT IDENTITY PK | PK                       | Location ID   |
+| location__name | NVARCHAR(200)   | NOT NULL, UNIQUE         | Location name |
+| description    | NVARCHAR(500)   | NULL                     | Details       |
+| latitude       | FLOAT           | NULL, -90–90             | Latitude      |
+| longitude      | FLOAT           | NULL, -180–180           | Longitude     |
+| created__at    | DATETIME2       | DEFAULT SYSUTCDATETIME() | Created date  |
+| updated__at    | DATETIME2       | DEFAULT SYSUTCDATETIME() | Updated date  |
+
+---
+
+8. Device Types
+
+Lists categories of devices.
+
+| Column           | Type            | Constraints      | Description |
+| ---------------- | --------------- | ---------------- | ----------- |
+| device__type__id | INT IDENTITY PK | PK               | Type ID     |
+| type__name       | NVARCHAR(100)   | NOT NULL, UNIQUE | Type name   |
+| description      | NVARCHAR(300)   | NULL             | Description |
+
+---
+
+9. Devices
+
+Stores device inventory.
+
+| Column           | Type            | Constraints                          | Description   |
+| ---------------- | --------------- | ------------------------------------ | ------------- |
+| device__id       | INT IDENTITY PK | PK                                   | Device ID     |
+| device__name     | NVARCHAR(200)   | NOT NULL                             | Device name   |
+| device__type__id | INT             | FK → device__types(device__type__id) | Device type   |
+| imei             | NVARCHAR(50)    | NULL, UNIQUE                         | IMEI          |
+| serial__number   | NVARCHAR(100)   | NULL, UNIQUE                         | Serial number |
+| mac__address     | NVARCHAR(50)    | NULL                                 | MAC address   |
+| is__active       | BIT             | DEFAULT 1                            | Active status |
+| created__at      | DATETIME2       | DEFAULT SYSUTCDATETIME()             | Created date  |
+| updated__at      | DATETIME2       | DEFAULT SYSUTCDATETIME()             | Updated date  |
+
+---
+
+10. IMSI Targets
+
+Stores target IMSIs for monitoring.
+
+| Column           | Type            | Constraints              | Description   |
+| ---------------- | --------------- | ------------------------ | ------------- |
+| imsi__target__id | INT IDENTITY PK | PK                       | Target ID     |
+| imsi             | NVARCHAR(64)    | NOT NULL, UNIQUE         | IMSI          |
+| description      | NVARCHAR(500)   | NULL                     | Description   |
+| is__active       | BIT             | DEFAULT 1                | Active status |
+| created__at      | DATETIME2       | DEFAULT SYSUTCDATETIME() | Created date  |
+| created__by      | INT             | FK → users(user__id)     | Creator       |
+
+---
+
+11. IMEI Targets
+
+Stores target IMEIs for monitoring.
+
+| Column           | Type            | Constraints              | Description   |
+| ---------------- | --------------- | ------------------------ | ------------- |
+| imei__target__id | INT IDENTITY PK | PK                       | Target ID     |
+| imei             | NVARCHAR(50)    | NOT NULL, UNIQUE         | IMEI          |
+| description      | NVARCHAR(500)   | NULL                     | Description   |
+| is__active       | BIT             | DEFAULT 1                | Active status |
+| created__at      | DATETIME2       | DEFAULT SYSUTCDATETIME() | Created date  |
+| created__by      | INT             | FK → users(user__id)     | Creator       |
+
+---
+
+12. Whitelist
+
+Stores approved IMEIs/IMSIs/devices.
+
+| Column        | Type            | Constraints              | Description  |
+| ------------- | --------------- | ------------------------ | ------------ |
+| whitelist__id | INT IDENTITY PK | PK                       | Entry ID     |
+| name          | NVARCHAR(200)   | NULL                     | Name         |
+| description   | NVARCHAR(500)   | NULL                     | Description  |
+| imei          | NVARCHAR(50)    | NULL                     | IMEI         |
+| imsi          | NVARCHAR(64)    | NULL                     | IMSI         |
+| device__id    | INT             | FK → devices(device__id) | Device       |
+| is__active    | BIT             | DEFAULT 1                | Active       |
+| created__at   | DATETIME2       | DEFAULT SYSUTCDATETIME() | Created date |
+| created__by   | INT             | FK → users(user__id)     | Creator      |
+
+---
+
+13. Blacklist
+
+Stores blocked IMEIs/IMSIs/devices.
+
+| Column        | Type            | Constraints              | Description  |
+| ------------- | --------------- | ------------------------ | ------------ |
+| blacklist__id | INT IDENTITY PK | PK                       | Entry ID     |
+| name          | NVARCHAR(200)   | NULL                     | Name         |
+| description   | NVARCHAR(500)   | NULL                     | Description  |
+| imei          | NVARCHAR(50)    | NULL                     | IMEI         |
+| imsi          | NVARCHAR(64)    | NULL                     | IMSI         |
+| device__id    | INT             | FK → devices(device__id) | Device       |
+| reason        | NVARCHAR(500)   | NULL                     | Reason       |
+| is__active    | BIT             | DEFAULT 1                | Active       |
+| created__at   | DATETIME2       | DEFAULT SYSUTCDATETIME() | Created date |
+| created__by   | INT             | FK → users(user__id)     | Creator      |
+
+---
+14. Task Types
+
+Lists task categories.
+
+| Column         | Type            | Constraints      | Description  |
+| -------------- | --------------- | ---------------- | ------------ |
+| task__type__id | INT IDENTITY PK | PK               | Task type ID |
+| type__name     | NVARCHAR(20)    | NOT NULL, UNIQUE | Type name    |
+| description    | NVARCHAR(200)   | NULL             | Description  |
+
+---
+
+15. Tasks
+
+Stores assigned tasks.
+
+| Column         | Type            | Constraints                      | Description      |
+| -------------- | --------------- | -------------------------------- | ---------------- |
+| task__id       | INT IDENTITY PK | PK                               | Task ID          |
+| task__type__id | INT             | FK → task__types(task__type__id) | Task type        |
+| source         | NVARCHAR(100)   | NULL                             | Source           |
+| dl             | INT             | NULL                             | Downlink         |
+| ul             | INT             | NULL                             | Uplink           |
+| ul__freq       | FLOAT           | NULL                             | Uplink frequency |
+| band           | NVARCHAR(100)   | NULL                             | Band             |
+| imei           | NVARCHAR(50)    | NULL                             | IMEI             |
+| target__imsi   | NVARCHAR(64)    | NULL                             | IMSI             |
+| user__id       | INT             | FK → users(user__id)             | Assigned user    |
+| case__ref      | NVARCHAR(100)   | NULL                             | Case reference   |
+| location__id   | INT             | FK → locations(location__id)     | Location         |
+| action         | NVARCHAR(100)   | NULL                             | Action           |
+| channel__id    | INT             | FK → channels(channel__id)       | Channel          |
+| created__at    | DATETIME2       | DEFAULT SYSUTCDATETIME()         | Created date     |
+| status         | NVARCHAR(30)    | NULL                             | Status           |
+
+---
+
+16. Scan Sessions
+
+Stores session metadata for scans.
+
+| Column        | Type            | Constraints                  | Description       |
+| ------------- | --------------- | ---------------------------- | ----------------- |
+| session__id   | INT IDENTITY PK | PK                           | Session ID        |
+| session__name | NVARCHAR(200)   | NOT NULL                     | Session name      |
+| device__id    | INT             | FK → devices(device__id)     | Device            |
+| location__id  | INT             | FK → locations(location__id) | Location          |
+| start__time   | DATETIME2       | NOT NULL                     | Start time        |
+| end__time     | DATETIME2       | NULL                         | End time          |
+| profile__id   | INT             | NULL                         | Profile reference |
+| notes         | NVARCHAR(MAX)   | NULL                         | Notes             |
+| created__at   | DATETIME2       | DEFAULT SYSUTCDATETIME()     | Created date      |
+
+---
+
+17. Scan Results
+
+Stores results of scans.
+
+| Column           | Type               | Constraints                      | Description     |
+| ---------------- | ------------------ | -------------------------------- | --------------- |
+| result__id       | BIGINT IDENTITY PK | PK                               | Result ID       |
+| session__id      | INT                | FK → scan__sessions(session__id) | Session         |
+| channel__id      | INT                | FK → channels(channel__id)       | Channel         |
+| operator__id     | INT                | FK → operators(operator__id)     | Operator        |
+| signal__strength | FLOAT              | NULL                             | Signal strength |
+| signal__quality  | FLOAT              | NULL                             | Signal quality  |
+| event__time      | DATETIME2          | NOT NULL                         | Event time      |
+| additional__data | NVARCHAR(MAX)      | NULL                             | Extra data      |
+
